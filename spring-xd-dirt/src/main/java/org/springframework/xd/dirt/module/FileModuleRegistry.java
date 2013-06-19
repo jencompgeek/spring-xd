@@ -21,11 +21,14 @@ import java.io.File;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
+import org.springframework.xd.module.JarModule;
+import org.springframework.xd.module.Module;
+import org.springframework.xd.module.SimpleModule;
 
 /**
  * @author Mark Fisher
  */
-public class FileModuleRegistry extends AbstractModuleRegistry {
+public class FileModuleRegistry implements ModuleRegistry {
 
 	private final File directory;
 
@@ -36,7 +39,25 @@ public class FileModuleRegistry extends AbstractModuleRegistry {
 	}
 
 	@Override
-	protected Resource loadResource(String name, String type) {
+	public Module lookup(String name, String type) {
+		 if(new File(directory, type + File.separator + name + ".xml").exists()) {
+			 return fileModule(name, type);
+		 }
+		 return jarModule(name,type);
+	}
+
+	protected Module fileModule(String name, String type) {
+		SimpleModule module = new SimpleModule(name, type);
+		module.addComponents(loadResource(name, type));
+		return module;
+	}
+
+	protected Module jarModule(String name, String type) {
+		JarModule module = new JarModule(name, type, new File(directory, type + File.separator + name + ".jar"));
+		return module;
+	}
+
+	private Resource loadResource(String name, String type) {
 		File file = new File(directory, type + File.separator + name + ".xml");
 		return new FileSystemResource(file);
 	}

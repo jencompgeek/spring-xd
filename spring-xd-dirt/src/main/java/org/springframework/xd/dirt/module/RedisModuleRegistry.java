@@ -21,11 +21,13 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.Assert;
+import org.springframework.xd.module.Module;
+import org.springframework.xd.module.SimpleModule;
 
 /**
  * @author Mark Fisher
  */
-public class RedisModuleRegistry extends AbstractModuleRegistry {
+public class RedisModuleRegistry implements ModuleRegistry {
 
 	private final StringRedisTemplate redisTemplate;
 
@@ -34,8 +36,13 @@ public class RedisModuleRegistry extends AbstractModuleRegistry {
 		this.redisTemplate = new StringRedisTemplate(connectionFactory);
 	}
 
-	@Override
-	protected Resource loadResource(String name, String type) {
+	public Module lookup(String name, String type) {
+		SimpleModule module = new SimpleModule(name, type);
+		module.addComponents(loadResource(name, type));
+		return module;
+	}
+
+	private Resource loadResource(String name, String type) {
 		Object config = this.redisTemplate.boundHashOps("modules:" + type).get(name);
 		return (config != null) ? new ByteArrayResource(config.toString().getBytes()) : null;
 	}
